@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description: "Personal monthly spending control",
   icons: {
     icon: [
+      { url: "/icon.png", type: "image/png", sizes: "any" },
       { url: "/icon.png", type: "image/png", sizes: "32x32" },
       { url: "/icon.png", type: "image/png", sizes: "192x192" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" },

@@ -93,7 +93,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
       if (suggestionsRes.ok) setMerchantSuggestions(suggestionsRes.data.suggestions);
       setLoading(false);
     });
-  }, [open]);
+  }, [open, form]);
 
   async function onSubmit(values: FormValues) {
     if (!monthId) {

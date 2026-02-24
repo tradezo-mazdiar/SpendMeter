@@ -31,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="flex h-10 items-center justify-end bg-transparent"
           aria-label="SpendMeter home"
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoSrc.src}
             alt="SpendMeter"
