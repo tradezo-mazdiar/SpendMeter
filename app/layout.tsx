@@ -12,6 +12,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "SpendMeter",
   description: "Personal monthly spending control",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "SpendMeter",
+  },
   icons: {
     icon: [
       { url: "/icon.png", type: "image/png", sizes: "any" },
