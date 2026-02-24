@@ -157,7 +157,7 @@ export function RecurringForm({
                         const d = e.target.valueAsDate;
                         if (d) field.onChange(d.getDate());
                       }}
-                      className="date-picker-brand-icon pointer-events-none pr-9"
+                      className="date-picker-brand-icon pr-9"
                     />
                     <CalendarIcon className="pointer-events-none absolute right-2.5 h-4 w-4 text-[#00C2A8]" aria-hidden />
                   </div>

@@ -210,7 +210,7 @@ export default function TransactionsPage() {
                 type="date"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="date-picker-brand-icon pointer-events-none w-40 pr-9"
+                className="date-picker-brand-icon w-40 pr-9"
               />
               <CalendarIcon className="pointer-events-none absolute right-2.5 h-4 w-4 text-[#00C2A8]" aria-hidden />
             </div>
@@ -241,7 +241,7 @@ export default function TransactionsPage() {
                 type="date"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="date-picker-brand-icon pointer-events-none w-40 pr-9"
+                className="date-picker-brand-icon w-40 pr-9"
               />
               <CalendarIcon className="pointer-events-none absolute right-2.5 h-4 w-4 text-[#00C2A8]" aria-hidden />
             </div>
