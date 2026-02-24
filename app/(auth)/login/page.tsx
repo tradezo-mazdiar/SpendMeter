@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 import logoSrc from "../../../SpendMeter_Logo_Transparent_Final.png";
 
 const loginSchema = z.object({
@@ -47,6 +48,7 @@ export default function LoginPage() {
         password: values.password,
       });
       if (error) {
+        setIsLoading(false);
         toast({
           title: "Login failed",
           description: error.message,
@@ -56,13 +58,26 @@ export default function LoginPage() {
       }
       router.push("/home");
       router.refresh();
-    } finally {
+      // Keep loading true so full-page overlay stays until home loads
+    } catch {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-6">
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-6">
+      {isLoading && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <Loader2 className="h-10 w-10 animate-spin text-primary" aria-hidden />
+          <p className="text-sm font-medium text-muted-foreground">
+            Signing you in...
+          </p>
+        </div>
+      )}
       <div className="w-full max-w-sm space-y-6">
         <div className="relative flex h-12 w-48 justify-center bg-transparent md:h-14 md:w-56">
           <Image
@@ -113,8 +128,19 @@ export default function LoginPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || form.formState.isSubmitting}
+            >
+              {(isLoading || form.formState.isSubmitting) ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
             </Button>
           </form>
         </Form>

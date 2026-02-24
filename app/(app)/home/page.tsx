@@ -27,6 +27,12 @@ import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { listTransactions } from "@/lib/actions/transactions";
 import type { TxDTO } from "@/lib/actions/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function HomePage() {
   const { toast } = useToast();
@@ -53,6 +59,10 @@ export default function HomePage() {
   const [cardMethods, setCardMethods] = useState<PaymentMethodWithSpentDTO[]>([]);
   const [lastTransactions, setLastTransactions] = useState<TxDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cardModalMethod, setCardModalMethod] =
+    useState<PaymentMethodWithSpentDTO | null>(null);
+  const [cardModalTx, setCardModalTx] = useState<TxDTO[]>([]);
+  const [cardModalLoading, setCardModalLoading] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -101,6 +111,24 @@ export default function HomePage() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!cardModalMethod || !selectedMonthId) {
+      setCardModalTx([]);
+      return;
+    }
+    setCardModalLoading(true);
+    listTransactions({
+      month_id: selectedMonthId,
+      payment_method_id: cardModalMethod.id,
+      limit: 10,
+    })
+      .then((res) => {
+        if (res.ok) setCardModalTx(res.data.transactions);
+        else setCardModalTx([]);
+      })
+      .finally(() => setCardModalLoading(false));
+  }, [cardModalMethod?.id, selectedMonthId]);
 
   async function handleStartNewMonth() {
     if (!newMonthNeeded?.needed || !activeMonth) return;
@@ -326,8 +354,17 @@ export default function HomePage() {
               return (
                 <Card
                   key={m.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setCardModalMethod(m)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setCardModalMethod(m);
+                    }
+                  }}
                   className={cn(
-                    "overflow-hidden border-2 bg-gradient-to-br from-card to-muted/30",
+                    "cursor-pointer overflow-hidden border-2 bg-gradient-to-br from-card to-muted/30 transition-colors hover:bg-muted/30",
                     hasLimit && m.remaining != null && m.remaining < 0
                       ? "border-destructive/30"
                       : "border-primary/20"
@@ -361,6 +398,56 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!cardModalMethod} onOpenChange={(open) => !open && setCardModalMethod(null)}>
+        <DialogContent className="max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {cardModalMethod?.name} — This month
+            </DialogTitle>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {cardModalLoading ? (
+              <div className="space-y-2 py-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
+            ) : cardModalTx.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No transactions this month.</p>
+            ) : (
+              <ul className="space-y-2">
+                {cardModalTx.map((t) => (
+                  <li key={t.id}>
+                    <Card>
+                      <CardContent className="flex flex-wrap items-center justify-between gap-2 py-3">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{t.merchant}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {t.category.name}
+                          </p>
+                        </div>
+                        <span className="font-semibold tabular-nums text-foreground">
+                          AED {Number(t.amount).toLocaleString()}
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="border-t pt-3">
+            <Link
+              href="/transactions"
+              className="text-sm font-medium text-primary hover:underline"
+              onClick={() => setCardModalMethod(null)}
+            >
+              View all →
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <QuickInsightCards
         topCategory={overview?.top_category ?? null}

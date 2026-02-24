@@ -8,9 +8,10 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await ensureUserSeedData();
-
-  const activeMonthResult = await getActiveMonth();
+  const [, activeMonthResult] = await Promise.all([
+    ensureUserSeedData(),
+    getActiveMonth(),
+  ]);
   if (activeMonthResult.ok) {
     await ensureRecurringAppliedForMonth({ month_id: activeMonthResult.data.id });
   }
