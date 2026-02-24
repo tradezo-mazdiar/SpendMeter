@@ -34,11 +34,20 @@ export function SpendBar({ limit, spent }: SpendBarProps) {
           style={{ width: `${fillRatio * 100}%` }}
         />
       </div>
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">Spent: {formatAED(spent)}</span>
-        <span className={cn(isOver && "text-destructive")}>
-          Remaining: {formatAED(remaining)}
-        </span>
+      <div className="flex justify-between gap-4 text-sm">
+        <div className="text-sm text-muted-foreground">
+          <p>Spent:</p>
+          <p className="mt-1 tabular-nums">{formatAED(spent)}</p>
+        </div>
+        <div
+          className={cn(
+            "text-lg font-semibold text-foreground",
+            isOver && "text-destructive"
+          )}
+        >
+          <p className="text-sm font-normal text-muted-foreground">Remaining:</p>
+          <p className="mt-1 tabular-nums">{formatAED(remaining)}</p>
+        </div>
       </div>
     </div>
   );

@@ -377,19 +377,10 @@ export default function HomePage() {
                     <p className="mt-1 truncate text-lg font-semibold text-foreground">
                       {m.name}
                     </p>
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        Limit: AED {limit.toLocaleString()}
-                      </span>
-                    </div>
-                    {hasLimit ? (
+                    {hasLimit && (
                       <div className="mt-3">
                         <SpendBar limit={limit} spent={m.spent} />
                       </div>
-                    ) : (
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        Spent: AED {m.spent.toLocaleString()}
-                      </p>
                     )}
                   </CardContent>
                 </Card>
