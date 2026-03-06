@@ -358,6 +358,9 @@ export async function ensureRecurringAppliedForMonth(input: {
 
   for (const t of templates ?? []) {
     const effectiveDueDay = Math.min(Number(t.due_day), lastDay);
+    const monthStr = String(monthMonth).padStart(2, "0");
+    const dayStr = String(effectiveDueDay).padStart(2, "0");
+    const spent_on = `${monthYear}-${monthStr}-${dayStr}`;
 
     const dueDatePassed =
       todayYear > monthYear ||
@@ -390,6 +393,7 @@ export async function ensureRecurringAppliedForMonth(input: {
         payment_method_id: t.payment_method_id,
         is_recurring_instance: true,
         recurring_template_id: t.id,
+        spent_on,
       })
       .select("id")
       .single();

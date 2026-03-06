@@ -12,6 +12,19 @@ export function getCurrentMonthLabel(): string {
   }).format(now);
 }
 
+export function formatDateYMDInDubai(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: DUBAI,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+export function getCurrentDateYMDInDubai(): string {
+  return formatDateYMDInDubai(new Date());
+}
+
 export function getCurrentDateInDubai(): Date {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: DUBAI,

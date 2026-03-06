@@ -14,19 +14,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { MerchantPicker } from "@/components/spendmeter/MerchantPicker";
+import { SearchableSelect } from "@/components/spendmeter/SearchableSelect";
+import { CalendarIcon } from "lucide-react";
 
 const transactionSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
   category_id: z.string().min(1, "Select a category"),
   payment_method_id: z.string().min(1, "Select a payment method"),
   merchant: z.string().min(1, "Merchant is required"),
+  spent_on: z.string().optional(),
   note: z.string().optional(),
 });
 
@@ -41,7 +38,6 @@ type TransactionFormProps = {
   initial?: TransactionFormInitial;
   categories: { id: string; name: string }[];
   paymentMethods: { id: string; name: string }[];
-  merchantSuggestions?: string[];
   onSubmit: (values: TransactionFormValues) => Promise<void>;
 };
 
@@ -50,7 +46,6 @@ export function TransactionForm({
   initial,
   categories,
   paymentMethods,
-  merchantSuggestions = [],
   onSubmit,
 }: TransactionFormProps) {
   const form = useForm<TransactionFormValues>({
@@ -60,6 +55,7 @@ export function TransactionForm({
       category_id: initial?.category_id ?? "",
       payment_method_id: initial?.payment_method_id ?? "",
       merchant: initial?.merchant ?? "",
+      spent_on: initial?.spent_on ?? "",
       note: initial?.note ?? "",
     },
   });
@@ -101,24 +97,15 @@ export function TransactionForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Category</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                value={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <SearchableSelect
+                  options={categories.map((c) => ({ value: c.id, label: c.name }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Select category"
+                  aria-label="Category"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -129,24 +116,15 @@ export function TransactionForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Payment method</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                value={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {paymentMethods.map((pm) => (
-                    <SelectItem key={pm.id} value={pm.id}>
-                      {pm.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <SearchableSelect
+                  options={paymentMethods.map((pm) => ({ value: pm.id, label: pm.name }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  placeholder="Select payment method"
+                  aria-label="Payment method"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -158,19 +136,57 @@ export function TransactionForm({
             <FormItem>
               <FormLabel>Merchant</FormLabel>
               <FormControl>
-                <Input
-                  list="merchant-suggestions"
+                <MerchantPicker
+                  value={field.value}
+                  onValueChange={field.onChange}
                   placeholder="Merchant name"
-                  {...field}
+                  aria-label="Merchant"
                 />
               </FormControl>
-              {merchantSuggestions.length > 0 && (
-                <datalist id="merchant-suggestions">
-                  {merchantSuggestions.map((s) => (
-                    <option key={s} value={s} />
-                  ))}
-                </datalist>
-              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="spent_on"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date</FormLabel>
+              <FormControl>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    const input = (e.currentTarget as HTMLDivElement).querySelector("input");
+                    if (input) {
+                      try {
+                        (input as HTMLInputElement).showPicker?.();
+                      } catch {
+                        input.click();
+                      }
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLDivElement).querySelector("input")?.click();
+                    }
+                  }}
+                  className="relative flex cursor-pointer items-center"
+                >
+                  <Input
+                    type="date"
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="date-picker-brand-icon pr-9"
+                  />
+                  <CalendarIcon
+                    className="pointer-events-none absolute right-2.5 h-4 w-4 text-[#00C2A8]"
+                    aria-hidden
+                  />
+                </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

@@ -24,11 +24,11 @@ import { useToast } from "@/hooks/use-toast";
 import { TransactionList, type TransactionItem } from "@/components/spendmeter/TransactionList";
 import { TransactionForm, type TransactionFormValues } from "@/components/spendmeter/TransactionForm";
 import { getActiveMonth } from "@/lib/actions/months";
+import { formatDateYMDInDubai, getCurrentDateInDubai } from "@/lib/dates";
 import {
   listTransactions,
   updateTransaction,
   deleteTransaction,
-  listMerchantSuggestions,
 } from "@/lib/actions/transactions";
 import { listCategories } from "@/lib/actions/categories";
 import { listPaymentMethods } from "@/lib/actions/payment-methods";
@@ -37,15 +37,12 @@ import type { TxDTO } from "@/lib/actions/types";
 type DateFilter = "week" | "month" | "custom";
 
 function getWeekRange(): { from: string; to: string } {
-  const now = new Date();
-  const to = new Date(now);
-  to.setHours(23, 59, 59, 999);
-  const from = new Date(now);
+  const today = getCurrentDateInDubai();
+  const from = new Date(today);
   from.setDate(from.getDate() - 6);
-  from.setHours(0, 0, 0, 0);
   return {
-    from: from.toISOString(),
-    to: to.toISOString(),
+    from: formatDateYMDInDubai(from),
+    to: formatDateYMDInDubai(today),
   };
 }
 
@@ -56,7 +53,7 @@ function txToItem(t: TxDTO): TransactionItem {
     merchant: t.merchant,
     category: t.category.name,
     paymentMethod: t.payment_method.name,
-    createdAtISO: t.created_at,
+    spentOn: t.spent_on,
     isRecurring: t.is_recurring_instance,
   };
 }
@@ -67,7 +64,6 @@ export default function TransactionsPage() {
   const [items, setItems] = useState<TransactionItem[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
-  const [merchantSuggestions, setMerchantSuggestions] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
@@ -87,10 +83,8 @@ export default function TransactionsPage() {
       date_from = range.from;
       date_to = range.to;
     } else if (dateFilter === "custom" && customFrom && customTo) {
-      date_from = new Date(customFrom).toISOString();
-      const toDate = new Date(customTo);
-      toDate.setHours(23, 59, 59, 999);
-      date_to = toDate.toISOString();
+      date_from = customFrom;
+      date_to = customTo;
     }
     const res = await listTransactions({
       month_id: monthId,
@@ -106,11 +100,10 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     async function init() {
-      const [activeRes, catRes, pmRes, sugRes] = await Promise.all([
+      const [activeRes, catRes, pmRes] = await Promise.all([
         getActiveMonth(),
         listCategories(),
         listPaymentMethods(),
-        listMerchantSuggestions({ q: "", limit: 8 }),
       ]);
       if (activeRes.ok) setMonthId(activeRes.data.id);
       if (catRes.ok)
@@ -121,7 +114,6 @@ export default function TransactionsPage() {
             .filter((m) => m.is_active)
             .map((m) => ({ id: m.id, name: m.name }))
         );
-      if (sugRes.ok) setMerchantSuggestions(sugRes.data.suggestions);
       setLoading(false);
     }
     init();
@@ -143,6 +135,7 @@ export default function TransactionsPage() {
       category_id: values.category_id,
       payment_method_id: values.payment_method_id,
       note: values.note ?? null,
+      spent_on: values.spent_on?.trim() || undefined,
     });
     if (result.ok) {
       setEditId(null);
@@ -320,10 +313,10 @@ export default function TransactionsPage() {
                 merchant: editingItem.merchant,
                 category_id: categories.find((c) => c.name === editingItem.category)?.id ?? "",
                 payment_method_id: paymentMethods.find((p) => p.name === editingItem.paymentMethod)?.id ?? "",
+                spent_on: editingItem.spentOn ?? "",
               }}
               categories={categories}
               paymentMethods={paymentMethods}
-              merchantSuggestions={merchantSuggestions}
               onSubmit={handleEdit}
             />
           )}

@@ -98,12 +98,16 @@ create table if not exists transactions (
   payment_method_id uuid not null references payment_methods(id) on delete restrict,
   is_recurring_instance boolean not null default false,
   recurring_template_id uuid null references recurring_templates(id) on delete set null,
+  -- Business date (when the expense happened), stored as Dubai calendar date.
+  spent_on date not null default (timezone('Asia/Dubai', now())::date),
   created_at timestamptz not null default now(),
   updated_at timestamptz null,
   is_deleted boolean not null default false,
   deleted_at timestamptz null
 );
 
+create index if not exists idx_tx_user_month_spent_on on transactions(user_id, month_id, spent_on);
+create index if not exists idx_tx_user_spent_on on transactions(user_id, spent_on);
 create index if not exists idx_tx_user_month_created on transactions(user_id, month_id, created_at);
 create index if not exists idx_tx_user_created on transactions(user_id, created_at);
 create index if not exists idx_tx_user_category on transactions(user_id, category_id);

@@ -13,6 +13,7 @@ export function SpendBar({ limit, spent }: SpendBarProps) {
   const remaining = limit - spent;
   const isOver = limit > 0 && spent > limit;
   const fillRatio = limit > 0 ? Math.min(1, spent / limit) : 0;
+  const remainingIsNegative = remaining < 0;
 
   return (
     <div className="space-y-2">
@@ -35,18 +36,22 @@ export function SpendBar({ limit, spent }: SpendBarProps) {
         />
       </div>
       <div className="flex justify-between gap-4 text-sm">
-        <div className="text-sm text-muted-foreground">
-          <p>Spent:</p>
-          <p className="mt-1 tabular-nums">{formatAED(spent)}</p>
+        <div>
+          <p className="text-sm text-muted-foreground">Spent:</p>
+          <p className="mt-1 font-semibold tabular-nums text-destructive">
+            {formatAED(spent)}
+          </p>
         </div>
-        <div
-          className={cn(
-            "text-lg font-semibold text-foreground",
-            isOver && "text-destructive"
-          )}
-        >
+        <div>
           <p className="text-sm font-normal text-muted-foreground">Remaining:</p>
-          <p className="mt-1 tabular-nums">{formatAED(remaining)}</p>
+          <p
+            className={cn(
+              "mt-1 font-semibold tabular-nums",
+              remainingIsNegative ? "text-destructive" : "text-primary"
+            )}
+          >
+            {formatAED(remaining)}
+          </p>
         </div>
       </div>
     </div>

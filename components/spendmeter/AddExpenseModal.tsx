@@ -23,18 +23,21 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { SearchableSelect } from "@/components/spendmeter/SearchableSelect";
+import { MerchantPicker } from "@/components/spendmeter/MerchantPicker";
 import { getActiveMonth } from "@/lib/actions/months";
 import { listCategories } from "@/lib/actions/categories";
 import { listPaymentMethods } from "@/lib/actions/payment-methods";
-import { listMerchantSuggestions } from "@/lib/actions/transactions";
 import { createTransaction } from "@/lib/actions/transactions";
 import { useToast } from "@/hooks/use-toast";
+import { CalendarIcon } from "lucide-react";
+import { getCurrentDateYMDInDubai } from "@/lib/dates";
 
 const schema = z.object({
   payment_method_id: z.string().min(1, "Select a payment method"),
   merchant: z.string().min(1, "Merchant is required"),
   category_id: z.string().min(1, "Select a category"),
   amount: z.number().positive("Amount must be positive"),
+  spent_on: z.string().optional(),
   note: z.string().optional(),
 });
 
@@ -50,7 +53,6 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   const { toast } = useToast();
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string }[]>([]);
-  const [merchantSuggestions, setMerchantSuggestions] = useState<string[]>([]);
   const [monthId, setMonthId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,6 +63,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
       merchant: "",
       category_id: "",
       amount: 0,
+      spent_on: getCurrentDateYMDInDubai(),
       note: "",
     },
   });
@@ -72,6 +75,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
       merchant: "",
       category_id: "",
       amount: 0,
+      spent_on: getCurrentDateYMDInDubai(),
       note: "",
     });
     setLoading(true);
@@ -79,8 +83,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
       getActiveMonth(),
       listCategories(),
       listPaymentMethods(),
-      listMerchantSuggestions({ q: "", limit: 50 }),
-    ]).then(([activeRes, catRes, pmRes, suggestionsRes]) => {
+    ]).then(([activeRes, catRes, pmRes]) => {
       if (activeRes.ok) setMonthId(activeRes.data.id);
       if (catRes.ok)
         setCategories(catRes.data.categories.map((c) => ({ id: c.id, name: c.name })));
@@ -90,7 +93,6 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             .filter((m) => m.is_active)
             .map((m) => ({ id: m.id, name: m.name }))
         );
-      if (suggestionsRes.ok) setMerchantSuggestions(suggestionsRes.data.suggestions);
       setLoading(false);
     });
   }, [open, form]);
@@ -107,6 +109,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
       merchant: values.merchant.trim(),
       payment_method_id: values.payment_method_id,
       note: values.note?.trim() || null,
+      spent_on: values.spent_on?.trim() ? values.spent_on.trim() : undefined,
     });
     if (result.ok) {
       toast({ title: "Expense saved" });
@@ -163,19 +166,13 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                     <FormItem>
                       <FormLabel>Merchant name</FormLabel>
                       <FormControl>
-                        <Input
+                        <MerchantPicker
+                          value={field.value}
+                          onValueChange={field.onChange}
                           placeholder="Merchant name"
-                          list="add-expense-merchants"
-                          {...field}
+                          aria-label="Merchant name"
                         />
                       </FormControl>
-                      {merchantSuggestions.length > 0 && (
-                        <datalist id="add-expense-merchants">
-                          {merchantSuggestions.map((s) => (
-                            <option key={s} value={s} />
-                          ))}
-                        </datalist>
-                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -224,6 +221,50 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="spent_on"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date (optional)</FormLabel>
+                    <FormControl>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          const input = (e.currentTarget as HTMLDivElement).querySelector("input");
+                          if (input) {
+                            try {
+                              (input as HTMLInputElement).showPicker?.();
+                            } catch {
+                              input.click();
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            (e.currentTarget as HTMLDivElement).querySelector("input")?.click();
+                          }
+                        }}
+                        className="relative flex cursor-pointer items-center"
+                      >
+                        <Input
+                          type="date"
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          className="date-picker-brand-icon pr-9"
+                        />
+                        <CalendarIcon
+                          className="pointer-events-none absolute right-2.5 h-4 w-4 text-[#00C2A8]"
+                          aria-hidden
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="note"

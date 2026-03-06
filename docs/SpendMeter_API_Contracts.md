@@ -303,6 +303,7 @@ type CreateTxInput = {
   category_id: string;
   merchant: string;            // required (autocomplete + free text)
   payment_method_id: string;
+  spent_on?: string;           // optional YYYY-MM-DD (Dubai calendar date)
   note?: string | null;
 };
 ```
@@ -379,6 +380,7 @@ type TxDTO = {
   category: { id: string; name: string };
   payment_method: { id: string; name: string; type: 'credit'|'debit'|'cash' };
   is_recurring_instance: boolean;
+  spent_on: string; // YYYY-MM-DD
   created_at: string;
   updated_at: string | null;
 };

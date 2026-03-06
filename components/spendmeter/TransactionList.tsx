@@ -12,7 +12,7 @@ export type TransactionItem = {
   merchant: string;
   category: string;
   paymentMethod: string;
-  createdAtISO: string;
+  spentOn: string; // YYYY-MM-DD
   isRecurring: boolean;
 };
 
@@ -26,16 +26,17 @@ function formatAED(n: number): string {
   return `AED ${n.toLocaleString("en-AE", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
-function formatDate(iso: string): string {
+function formatDate(ymd: string): string {
   try {
-    const d = new Date(iso);
+    // YYYY-MM-DD parses as UTC; add midday to avoid timezone date shifts in UI.
+    const d = new Date(`${ymd}T12:00:00Z`);
     return d.toLocaleDateString("en-AE", {
       day: "numeric",
       month: "short",
       year: "numeric",
     });
   } catch {
-    return iso;
+    return ymd;
   }
 }
 
@@ -71,7 +72,7 @@ export function TransactionList({
                   {item.category} · {item.paymentMethod}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(item.createdAtISO)}
+                  {formatDate(item.spentOn)}
                 </p>
               </div>
               <div className="flex items-center gap-2">

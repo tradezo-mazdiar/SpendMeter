@@ -34,7 +34,7 @@ export default function InsightsPage() {
   const [largestExpense, setLargestExpense] = useState<{
     merchant: string;
     amount: number;
-    created_at: string;
+    spent_on: string;
   } | null>(null);
 
   const loadInsights = useCallback(async () => {
@@ -124,7 +124,7 @@ export default function InsightsPage() {
             <p className="font-medium">{largestExpense.merchant}</p>
             <p className="text-lg font-semibold">{formatAED(largestExpense.amount)}</p>
             <p className="text-xs text-muted-foreground">
-              {formatDate(largestExpense.created_at)}
+        {formatDate(largestExpense.spent_on)}
             </p>
           </CardContent>
         </Card>

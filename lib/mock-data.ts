@@ -35,7 +35,7 @@ export type MockTransactionItem = {
   categoryId: string;
   paymentMethod: string;
   paymentMethodId: string;
-  createdAtISO: string;
+  spentOn: string;
   isRecurring: boolean;
   note?: string | null;
 };
@@ -49,7 +49,7 @@ export const mockTransactions: MockTransactionItem[] = [
     categoryId: "cat-groceries",
     paymentMethod: "Debit Card",
     paymentMethodId: "pm-debit",
-    createdAtISO: "2026-02-20T10:00:00Z",
+    spentOn: "2026-02-20",
     isRecurring: false,
   },
   {
@@ -60,7 +60,7 @@ export const mockTransactions: MockTransactionItem[] = [
     categoryId: "cat-fuel",
     paymentMethod: "Credit Card",
     paymentMethodId: "pm-credit",
-    createdAtISO: "2026-02-18T14:30:00Z",
+    spentOn: "2026-02-18",
     isRecurring: false,
   },
   {
@@ -71,7 +71,7 @@ export const mockTransactions: MockTransactionItem[] = [
     categoryId: "cat-bills",
     paymentMethod: "Debit Card",
     paymentMethodId: "pm-debit",
-    createdAtISO: "2026-02-01T09:00:00Z",
+    spentOn: "2026-02-01",
     isRecurring: true,
   },
   {
@@ -82,7 +82,7 @@ export const mockTransactions: MockTransactionItem[] = [
     categoryId: "cat-food",
     paymentMethod: "Cash",
     paymentMethodId: "pm-cash",
-    createdAtISO: "2026-02-22T08:00:00Z",
+    spentOn: "2026-02-22",
     isRecurring: false,
   },
   {
@@ -93,7 +93,7 @@ export const mockTransactions: MockTransactionItem[] = [
     categoryId: "cat-shopping",
     paymentMethod: "Credit Card",
     paymentMethodId: "pm-credit",
-    createdAtISO: "2026-02-15T16:00:00Z",
+    spentOn: "2026-02-15",
     isRecurring: false,
   },
   {
@@ -104,7 +104,7 @@ export const mockTransactions: MockTransactionItem[] = [
     categoryId: "cat-bills",
     paymentMethod: "Debit Card",
     paymentMethodId: "pm-debit",
-    createdAtISO: "2026-02-05T12:00:00Z",
+    spentOn: "2026-02-05",
     isRecurring: true,
   },
 ];
@@ -212,7 +212,7 @@ export const mockLargestExpense = mockTransactions.length
       return {
         merchant: t.merchant,
         amount: t.amount,
-        created_at: t.createdAtISO,
+        spent_on: t.spentOn,
       };
     })()
   : null;

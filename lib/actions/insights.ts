@@ -127,7 +127,7 @@ function aggregateForInsights(transactions: TxDTO[]): {
   by_category: { name: string; total: number }[];
   by_merchant: { merchant: string; total: number }[];
   by_payment_method: { name: string; total: number }[];
-  largest_expense: { merchant: string; amount: number; created_at: string } | null;
+  largest_expense: { merchant: string; amount: number; spent_on: string } | null;
 } {
   const byCategory = new Map<string, number>();
   const byMerchant = new Map<string, number>();
@@ -158,7 +158,7 @@ function aggregateForInsights(transactions: TxDTO[]): {
       ? {
           merchant: largest.merchant,
           amount: Number(largest.amount),
-          created_at: largest.created_at,
+          spent_on: largest.spent_on,
         }
       : null,
   };

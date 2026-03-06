@@ -58,6 +58,7 @@ export type TxDTO = {
   category: { id: string; name: string };
   payment_method: { id: string; name: string; type: "credit" | "debit" | "cash" };
   is_recurring_instance: boolean;
+  spent_on: string; // YYYY-MM-DD
   created_at: string;
   updated_at: string | null;
 };
@@ -80,5 +81,5 @@ export type InsightsDTO = {
   by_merchant: { merchant: string; total: number }[];
   by_payment_method: { name: string; total: number }[];
   highlights: string[];
-  largest_expense: { merchant: string; amount: number; created_at: string } | null;
+  largest_expense: { merchant: string; amount: number; spent_on: string } | null;
 };

@@ -18,7 +18,7 @@ import {
 } from "@/lib/actions/months";
 import { getMonthOverview } from "@/lib/actions/insights";
 import { getSessionProfile } from "@/lib/actions/profile";
-import { listPaymentMethodsWithSpent } from "@/lib/actions/payment-methods";
+import { listPaymentMethodsWithSpent, updatePaymentMethod } from "@/lib/actions/payment-methods";
 import type { MonthDTO } from "@/lib/actions/types";
 import type { PaymentMethodWithSpentDTO } from "@/lib/actions/payment-methods";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +39,7 @@ export default function HomePage() {
   const [activeMonth, setActiveMonth] = useState<MonthDTO | null>(null);
   const [months, setMonths] = useState<MonthDTO[]>([]);
   const [spent, setSpent] = useState(0);
+  const [spentMonthId, setSpentMonthId] = useState<string | null>(null);
   const [newMonthNeeded, setNewMonthNeeded] = useState<{
     needed: boolean;
     suggested_label: string;
@@ -57,12 +58,17 @@ export default function HomePage() {
   } | null>(null);
   const [displayName, setDisplayName] = useState<string>("");
   const [cardMethods, setCardMethods] = useState<PaymentMethodWithSpentDTO[]>([]);
+  const [cardMethodsMonthId, setCardMethodsMonthId] = useState<string | null>(null);
   const [lastTransactions, setLastTransactions] = useState<TxDTO[]>([]);
+  const [lastTransactionsMonthId, setLastTransactionsMonthId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [cardModalMethod, setCardModalMethod] =
     useState<PaymentMethodWithSpentDTO | null>(null);
   const [cardModalTx, setCardModalTx] = useState<TxDTO[]>([]);
   const [cardModalLoading, setCardModalLoading] = useState(false);
+  const [editingCardLimitId, setEditingCardLimitId] = useState<string | null>(null);
+  const [cardLimitInput, setCardLimitInput] = useState("");
+  const [savingCardLimit, setSavingCardLimit] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -82,7 +88,10 @@ export default function HomePage() {
         getMonthOverview({ month_id: activeRes.data.id }),
         listPaymentMethodsWithSpent(activeRes.data.id),
       ]);
-      if (spentRes.ok) setSpent(spentRes.data.spent);
+      if (spentRes.ok) {
+        setSpent(spentRes.data.spent);
+        setSpentMonthId(activeRes.data.id);
+      }
       if (overviewRes.ok) {
         setOverview({
           top_category: overviewRes.data.top_category,
@@ -93,14 +102,20 @@ export default function HomePage() {
       } else {
         setOverview(null);
       }
-      if (cardsRes.ok) setCardMethods(cardsRes.data.methods);
-      else setCardMethods([]);
+      if (cardsRes.ok) {
+        setCardMethods(cardsRes.data.methods);
+        setCardMethodsMonthId(activeRes.data.id);
+      } else {
+        setCardMethods([]);
+        setCardMethodsMonthId(activeRes.data.id);
+      }
       const txRes = await listTransactions({
         month_id: activeRes.data.id,
         limit: 5,
       });
       if (txRes.ok) setLastTransactions(txRes.data.transactions);
       else setLastTransactions([]);
+      setLastTransactionsMonthId(activeRes.data.id);
     }
     if (listRes.ok) setMonths(listRes.data.months);
     if (detectRes.ok) setNewMonthNeeded(detectRes.data);
@@ -139,19 +154,29 @@ export default function HomePage() {
     });
     setStartingMonth(false);
     if (result.ok) {
-      setActiveMonth(result.data.new_month);
-      setSelectedMonthId(result.data.new_month.id);
+      const newMonth = result.data.new_month;
+      setActiveMonth(newMonth);
+      setSelectedMonthId(newMonth.id);
+      // Prevent stale UI from the previous month while we re-fetch.
       setSpent(0);
-      setLimitInput(String(result.data.new_month.spending_limit));
+      setSpentMonthId(newMonth.id);
+      setCardMethods([]);
+      setCardMethodsMonthId(newMonth.id);
+      setLastTransactions([]);
+      setLastTransactionsMonthId(newMonth.id);
+      setLimitInput(String(newMonth.spending_limit));
       setNewMonthNeeded({
         needed: false,
         suggested_label: newMonthNeeded.suggested_label,
-        current_active_label: result.data.new_month.label,
+        current_active_label: newMonth.label,
       });
       setOverview(null);
-      const [listRes, overviewRes] = await Promise.all([
+      const [listRes, overviewRes, spentRes, cardsRes, txRes] = await Promise.all([
         listMonths({ limit: 24 }),
-        getMonthOverview({ month_id: result.data.new_month.id }),
+        getMonthOverview({ month_id: newMonth.id }),
+        getMonthSpent(newMonth.id),
+        listPaymentMethodsWithSpent(newMonth.id),
+        listTransactions({ month_id: newMonth.id, limit: 5 }),
       ]);
       if (listRes.ok) setMonths(listRes.data.months);
       if (overviewRes.ok) {
@@ -162,6 +187,17 @@ export default function HomePage() {
           transaction_count: overviewRes.data.transaction_count,
         });
       }
+      if (spentRes.ok) {
+        setSpent(spentRes.data.spent);
+        setSpentMonthId(newMonth.id);
+      }
+      if (cardsRes.ok) {
+        setCardMethods(cardsRes.data.methods);
+        setCardMethodsMonthId(newMonth.id);
+      }
+      if (txRes.ok) setLastTransactions(txRes.data.transactions);
+      else setLastTransactions([]);
+      setLastTransactionsMonthId(newMonth.id);
       toast({ title: "New month started" });
     } else {
       toast({
@@ -204,8 +240,32 @@ export default function HomePage() {
   useEffect(() => {
     if (!selectedMonthId) return;
     if (selectedMonthId === activeMonth?.id) {
-      setViewSpent((prev) => ({ ...prev, [selectedMonthId]: spent }));
-      setViewCardMethods(cardMethods);
+      if (spentMonthId === selectedMonthId) {
+        setViewSpent((prev) => ({ ...prev, [selectedMonthId]: spent }));
+      } else {
+        getMonthSpent(selectedMonthId).then((res) => {
+          if (!res.ok) return;
+          setSpent(res.data.spent);
+          setSpentMonthId(selectedMonthId);
+          setViewSpent((prev) => ({ ...prev, [selectedMonthId]: res.data.spent }));
+        });
+      }
+
+      if (cardMethodsMonthId === selectedMonthId) {
+        setViewCardMethods(cardMethods);
+      } else {
+        listPaymentMethodsWithSpent(selectedMonthId).then((res) => {
+          if (!res.ok) {
+            setCardMethods([]);
+            setCardMethodsMonthId(selectedMonthId);
+            setViewCardMethods([]);
+            return;
+          }
+          setCardMethods(res.data.methods);
+          setCardMethodsMonthId(selectedMonthId);
+          setViewCardMethods(res.data.methods);
+        });
+      }
       return;
     }
     getMonthSpent(selectedMonthId).then((res) => {
@@ -215,7 +275,18 @@ export default function HomePage() {
       if (res.ok) setViewCardMethods(res.data.methods);
       else setViewCardMethods([]);
     });
-  }, [selectedMonthId, activeMonth?.id, spent, cardMethods]);
+  }, [selectedMonthId, activeMonth?.id, spent, cardMethods, spentMonthId, cardMethodsMonthId]);
+
+  useEffect(() => {
+    if (!selectedMonthId) return;
+    if (selectedMonthId !== activeMonth?.id) return;
+    if (lastTransactionsMonthId === selectedMonthId) return;
+    listTransactions({ month_id: selectedMonthId, limit: 5 }).then((res) => {
+      if (res.ok) setLastTransactions(res.data.transactions);
+      else setLastTransactions([]);
+      setLastTransactionsMonthId(selectedMonthId);
+    });
+  }, [selectedMonthId, activeMonth?.id, lastTransactionsMonthId]);
 
   const monthOptions = months.map((m) => ({
     id: m.id,
@@ -225,6 +296,41 @@ export default function HomePage() {
   const selectedMonth = months.find((m) => m.id === selectedMonthId);
   const displayLimit = selectedMonth?.spending_limit ?? 0;
   const displaySpent = viewSpent[selectedMonthId] ?? 0;
+
+  async function handleSaveCardLimit() {
+    if (!editingCardLimitId) return;
+    const raw = cardLimitInput.trim();
+    const nextLimit =
+      raw === "" ? null : Number.isFinite(Number(raw)) && Number(raw) >= 0 ? Number(raw) : NaN;
+
+    if (Number.isNaN(nextLimit as number)) {
+      toast({ title: "Invalid limit", variant: "destructive" });
+      return;
+    }
+
+    setSavingCardLimit(true);
+    const res = await updatePaymentMethod({ id: editingCardLimitId, card_limit: nextLimit });
+    setSavingCardLimit(false);
+
+    if (!res.ok) {
+      toast({
+        title: "Failed to update limit",
+        description: res.error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const cardsRes = await listPaymentMethodsWithSpent(selectedMonthId);
+    if (cardsRes.ok) {
+      setViewCardMethods(cardsRes.data.methods);
+      if (selectedMonthId === activeMonth?.id) setCardMethods(cardsRes.data.methods);
+    }
+
+    setEditingCardLimitId(null);
+    setCardLimitInput("");
+    toast({ title: "Card limit updated" });
+  }
 
   if (loading) {
     return (
@@ -350,7 +456,8 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-3">
             {viewCardMethods.map((m) => {
               const limit = m.card_limit ?? 0;
-              const hasLimit = m.card_limit != null && m.card_limit > 0;
+              const hasLimit = m.card_limit != null;
+              const isEditingThis = editingCardLimitId === m.id;
               return (
                 <Card
                   key={m.id}
@@ -371,12 +478,80 @@ export default function HomePage() {
                   )}
                 >
                   <CardContent className="p-4">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                      {m.type}
-                    </p>
-                    <p className="mt-1 truncate text-lg font-semibold text-foreground">
-                      {m.name}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-lg font-semibold text-foreground">
+                          {m.name}
+                        </p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                          {m.type}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      {isEditingThis ? (
+                        <div
+                          className="flex flex-wrap items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <Input
+                            type="number"
+                            min={0}
+                            step={100}
+                            className="w-28"
+                            value={cardLimitInput}
+                            onChange={(e) => setCardLimitInput(e.target.value)}
+                            placeholder="Limit"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveCardLimit();
+                            }}
+                            disabled={savingCardLimit}
+                          >
+                            {savingCardLimit ? "Saving..." : "Save"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCardLimitId(null);
+                              setCardLimitInput("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm text-muted-foreground">
+                            Limit:{" "}
+                            {m.card_limit != null
+                              ? `AED ${Number(m.card_limit).toLocaleString()}`
+                              : "—"}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCardLimitId(m.id);
+                              setCardLimitInput(m.card_limit != null ? String(m.card_limit) : "");
+                            }}
+                            aria-label="Edit card limit"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
                     {hasLimit && (
                       <div className="mt-3">
                         <SpendBar limit={limit} spent={m.spent} />
